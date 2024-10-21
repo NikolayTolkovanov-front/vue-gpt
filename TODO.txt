@@ -1,0 +1,11 @@
+- emit(send_prompt, send_prompt_with_file, regenerate)
+- regenerate для вопроса, ответа
+- запретить переход на несуществующий id чата
+- rename chat
+- delete chat
+список gpt
+copy ответ
+add_chat_with_file
+кол-во запросов
+деплой
+поправить если выбираем одну и ту же картинку
