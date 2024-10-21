@@ -16,7 +16,8 @@ export const useChatsStore = defineStore('chats', {
       { id: 6, value: 'yyyy' }
     ],
     models: [],
-    currentModel: ''
+    currentModel: '',
+    promptLimit: 0,
   }),
   actions: {
     async getChats() {
@@ -283,7 +284,53 @@ export const useChatsStore = defineStore('chats', {
       this.currentModel = this.models[indexOfModel].title
       console.log('currentModel', this.currentModel)
       console.groupEnd()
-    }
+    },
+    async getPromptsLimit() {
+      const authStore = useAuthStore()
+
+      return await ChatsService.getPromptsLimit(
+        authStore.getToken,
+      ).then(
+        (res) => {
+          console.group('getPromptsLimit')
+          console.log('res', res)
+          this.promptLimit = res.limit
+
+          console.groupEnd()
+          this.error = null
+          return Promise.resolve()
+        },
+        (error) => {
+          this.error = error.message
+          return Promise.reject(error.message)
+        }
+      )
+    },
+    async minusPromptLimit() {
+      const authStore = useAuthStore()
+
+      if (this.promptLimit === 0) {
+        return
+      }
+
+      return await ChatsService.minusPromptLimit(
+        authStore.getToken,
+      ).then(
+        (res) => {
+          console.group('minusPromptLimit')
+          console.log('res', res)
+          this.promptLimit -= res.limit
+
+          console.groupEnd()
+          this.error = null
+          return Promise.resolve()
+        },
+        (error) => {
+          this.error = error.message
+          return Promise.reject(error.message)
+        }
+      )
+    },
   },
   getters: {
     sortedChatsByPeriods(state) {
@@ -419,6 +466,9 @@ export const useChatsStore = defineStore('chats', {
     },
     getCurrentModel(state) {
       return state.currentModel || ''
+    },
+    getterPromptsLimit(state) {
+      return state.promptLimit || 0
     }
   }
 })

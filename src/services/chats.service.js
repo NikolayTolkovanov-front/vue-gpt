@@ -216,6 +216,38 @@ class ChatsService {
       return this.#validateError(error)
     }
   }
+
+  async getPromptsLimit(token) {
+    try {
+      const newUrl = new URL(`gpt/get_req_limit?token=${token}`, this.#baseURL)
+
+      const response = await axios.get(newUrl)
+
+      if (!response.data || typeof response.data !== 'object') {
+        throw new Error('No limit found')
+      }
+
+      return response.data
+    } catch (error) {
+      return this.#validateError(error)
+    }
+  }
+
+  async minusPromptLimit(token) {
+    try {
+      const newUrl = new URL(`gpt/minus_limit?token=${token}`, this.#baseURL)
+
+      const response = await axios.get(newUrl)
+
+      if (!response.data || typeof response.data !== 'object') {
+        throw new Error('Выполнить запрос не удалось')
+      }
+
+      return response.data
+    } catch (error) {
+      return this.#validateError(error)
+    }
+  }
 }
 
 export default new ChatsService()

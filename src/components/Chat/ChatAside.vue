@@ -81,6 +81,7 @@
                   v-for="model of chatsStore.getterModels"
                   :key="model.id"
                   class="popup-list__item"
+                  :class="{ 'active': chatsStore.getCurrentModel === model.title }"
                 >
                   <button
                     @click="changeModel(model.id)"
@@ -95,20 +96,6 @@
                     <p class="popup-list__item-text">{{ model.title }}</p>
                   </button>
                 </li>
-                <!-- <li class="popup-list__item">
-                  <a
-                    class="popup-list__link"
-                    href="#"
-                  >
-                    <div class="popup-list__item-icon bots-list__icon--left">
-                      <img
-                        src="https://files.oaiusercontent.com/file-hbxowtiyxew901FywZXTcb4V?se=2124-03-22T16%3A51%3A30Z&sp=r&sv=2021-08-06&sr=b&rscc=max-age%3D1209600%2C%20immutable&rscd=attachment%3B%20filename%3Dlogo-brighter.png&sig=d/1A/B6wbaTwAWj2ZuPziepcTlEt6UaqNaJhXsY9DrU%3D"
-                        alt=""
-                      />
-                    </div>
-                    <p class="popup-list__item-text">ChatGPT</p>
-                  </a>
-                </li> -->
               </ul>
             </nav>
           </template>
@@ -254,7 +241,7 @@
       <div class="aside-footer">
         <p class="aside-footer__counter">
           Осталось запросов:
-          <span class="aside-footer__counter-number">45 / 50</span>
+          <span class="aside-footer__counter-number">{{ chatsStore.getterPromptsLimit }}</span>
         </p>
         <a
           href="settings.html"
@@ -353,6 +340,7 @@ function changeModel(modelId) {
 
 onMounted(async () => {
   await chatsStore.getModels()
+  await chatsStore.getPromptsLimit()
 })
 </script>
 

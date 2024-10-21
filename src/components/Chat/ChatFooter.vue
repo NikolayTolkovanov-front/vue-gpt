@@ -9,7 +9,7 @@
       <div class="input">
         <div class="input-file">
           <input
-            @input="chooseFile"
+            @change="chooseFile"
             multiple=""
             type="file"
             name="file"
@@ -34,6 +34,7 @@
               </div>
             </Tippy>
             <Tippy
+              v-if="chatsStore.getterPromptsLimit !== 0"
               to="parent"
               trigger="click"
               :arrow="false"
@@ -132,7 +133,7 @@
             />
             <span
               data-placeholder="Введите текст"
-              contenteditable="true"
+              :contenteditable="chatsStore.getterPromptsLimit !== 0"
               @input="changePrompt"
               class="prompt__text"
               >{{ prompt }}</span
@@ -223,7 +224,7 @@ async function submit(chat) {
     if (inputFileImg.value) {
       await chatsStore
         .sendPromptWithFile(chat.prompt, inputFileImg.value, route.params['id'])
-        .then((res) => console.log('res'))
+        .then((res) => chatsStore.minusPromptLimit())
         .finally(() => {
           closeImg()
         })
@@ -232,7 +233,10 @@ async function submit(chat) {
 
     await chatsStore
       .sendPrompt(chat.prompt, route.params['id'])
-      .then((res) => emit('sendPrompt', res))
+      .then((res) => {
+        emit('sendPrompt', res)
+        chatsStore.minusPromptLimit()
+      })
       .catch((error) => console.log(error))
 
     return
@@ -245,7 +249,10 @@ async function submit(chat) {
     if (inputFileImg.value) {
       await chatsStore
         .addChatWithFile(chat.prompt, inputFileImg.value)
-        .then((chatId) => router.push(`/chat/${chatId}`))
+        .then((chatId) => {
+          router.push(`/chat/${chatId}`)
+          chatsStore.minusPromptLimit()
+        })
         .finally(() => {
           closeImg()
         })
@@ -256,6 +263,7 @@ async function submit(chat) {
       .addChat(chat.prompt)
       .then((chatId) => {
         router.push(`/chat/${chatId}`)
+        chatsStore.minusPromptLimit()
       })
       .catch((error) => console.log(error))
   }
