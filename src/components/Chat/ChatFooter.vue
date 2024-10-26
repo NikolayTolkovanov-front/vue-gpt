@@ -10,7 +10,6 @@
         <div class="input-file">
           <input
             @change="chooseFile"
-            multiple=""
             type="file"
             name="file"
             ref="input-file"
@@ -34,7 +33,7 @@
               </div>
             </Tippy>
             <Tippy
-              v-if="chatsStore.getterPromptsLimit !== 0"
+              v-if="hasLimitAndModel"
               to="parent"
               trigger="click"
               :arrow="false"
@@ -133,7 +132,7 @@
             />
             <span
               data-placeholder="Введите текст"
-              :contenteditable="chatsStore.getterPromptsLimit !== 0"
+              :contenteditable="hasLimitAndModel"
               @input="changePrompt"
               class="prompt__text"
               >{{ prompt }}</span
@@ -166,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineModel, useTemplateRef, ref, watch } from 'vue'
+import { defineModel, useTemplateRef, ref, watch, computed, type Ref } from 'vue'
 import { Form, Field } from 'vee-validate'
 import { useChatsStore } from '@/stores/chats'
 import { useRoute, useRouter } from 'vue-router'
@@ -182,10 +181,14 @@ const route = useRoute()
 const router = useRouter()
 
 const inputFile = useTemplateRef('input-file')
-const inputFileImg = ref(null)
-const inputImgPath = ref(null)
+const inputFileImg: Ref<File | null> = ref(null)
+const inputImgPath: Ref<string> = ref('')
 
-function changePrompt(event) {
+const hasLimitAndModel = computed(() => {
+  return chatsStore.promptLimit !== 0 && chatsStore.currentModel.length !== 0
+})
+
+function changePrompt(event: Event) {
   prompt.value = event.target.textContent
 }
 
@@ -195,7 +198,7 @@ function openFileMenu() {
   inputFile.value.click()
 }
 
-function chooseFile(event) {
+function chooseFile(event: Event) {
   const files = event.target.files
   console.log('files', files)
 
@@ -211,8 +214,23 @@ function chooseFile(event) {
 }
 
 function closeImg() {
-  inputFileImg.value = null
-  inputImgPath.value = null
+  console.log('inputFile.value', inputFile.value);
+
+  if (inputFile.value.value) {
+    inputFile.value.value = ''
+  }
+
+  if (inputFileImg.value) {
+    inputFileImg.value = null
+  }
+
+  if (inputImgPath.value.length) {
+    inputImgPath.value = ''
+  }
+  
+  // inputFile.value.value = ''
+  // inputFileImg.value = null
+  // inputImgPath.value = ''
 }
 
 async function submit(chat) {
@@ -223,8 +241,11 @@ async function submit(chat) {
 
     if (inputFileImg.value) {
       await chatsStore
-        .sendPromptWithFile(chat.prompt, inputFileImg.value, route.params['id'])
-        .then((res) => chatsStore.minusPromptLimit())
+        .sendPromptWithFile(chat.prompt, inputFileImg.value, Number(route.params['id']))
+        .then((res) => {
+          emit('sendPrompt', res)
+          chatsStore.minusPromptLimit()
+        })
         .finally(() => {
           closeImg()
         })
@@ -232,7 +253,7 @@ async function submit(chat) {
     }
 
     await chatsStore
-      .sendPrompt(chat.prompt, route.params['id'])
+      .sendPrompt(chat.prompt, Number(route.params['id']))
       .then((res) => {
         emit('sendPrompt', res)
         chatsStore.minusPromptLimit()
@@ -272,8 +293,7 @@ async function submit(chat) {
 watch(
   () => route.params['id'],
   () => {
-    inputFileImg.value = null
-    inputImgPath.value = null
+    closeImg()
   }
 )
 </script>

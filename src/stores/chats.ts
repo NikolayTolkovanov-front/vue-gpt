@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import ChatsService from '@/services/chats.service'
-import { useAuthStore } from './auth'
+import { useAuthStore } from './auth.js'
 import { isToday, isYesterday, subDays, subMonths, format } from 'date-fns'
 
 export const useChatsStore = defineStore('chats', {
@@ -18,12 +18,13 @@ export const useChatsStore = defineStore('chats', {
     models: [],
     currentModel: '',
     promptLimit: 0,
+    error: ''
   }),
   actions: {
     async getChats() {
       const authStore = useAuthStore()
 
-      return await ChatsService.getChats(authStore.getToken).then(
+      return await ChatsService.getChats(authStore.token).then(
         (chats) => {
           // this.chats = chats
           for (let i = 0; i < chats.length; i++) {
@@ -34,7 +35,7 @@ export const useChatsStore = defineStore('chats', {
           console.group('getChats')
           console.log('this.chats', this.chats)
           console.groupEnd()
-          this.error = null
+          this.error = ''
           return Promise.resolve()
         },
         (error) => {
@@ -43,7 +44,7 @@ export const useChatsStore = defineStore('chats', {
         }
       )
     },
-    async getChat(chatId) {
+    async getChat(chatId: number) {
       const formattedChatId = Number(chatId)
 
       return await ChatsService.getChat(chatId).then(
@@ -61,7 +62,7 @@ export const useChatsStore = defineStore('chats', {
           this.chats[indexChat]['answers'] = res.answers
 
           console.groupEnd()
-          this.error = null
+          this.error = ''
           return this.chats[indexChat]
         },
         (error) => {
@@ -70,10 +71,10 @@ export const useChatsStore = defineStore('chats', {
         }
       )
     },
-    async addChat(prompt) {
+    async addChat(prompt: string) {
       const authStore = useAuthStore()
 
-      return await ChatsService.addChat(authStore.getToken, prompt, this.currentModel).then(
+      return await ChatsService.addChat(authStore.token, prompt, this.currentModel).then(
         (res) => {
           const newChat = {
             id: res.chat['chat_id'],
@@ -83,7 +84,7 @@ export const useChatsStore = defineStore('chats', {
 
           this.chats.push(newChat)
 
-          this.error = null
+          this.error = ''
           return Promise.resolve(res.chat['chat_id'])
         },
         (error) => {
@@ -92,11 +93,12 @@ export const useChatsStore = defineStore('chats', {
         }
       )
     },
-    async addChatWithFile(prompt, file) {
+    // TODO
+    async addChatWithFile(prompt: string, file: File) {
       const authStore = useAuthStore()
 
       return await ChatsService.addChatWithFile(
-        authStore.getToken,
+        authStore.token,
         prompt,
         this.currentModel,
         file
@@ -113,7 +115,7 @@ export const useChatsStore = defineStore('chats', {
 
           // this.chats.push(newChat)
           console.groupEnd()
-          this.error = null
+          this.error = ''
           return Promise.resolve(res.chat['chat_id'])
         },
         (error) => {
@@ -122,13 +124,13 @@ export const useChatsStore = defineStore('chats', {
         }
       )
     },
-    async deleteChat(chatId) {
+    async deleteChat(chatId: number) {
       return await ChatsService.deleteChat(chatId).then(() => {
         const indexOfChat = this.chats.findIndex((chat) => chat.id === chatId)
         this.chats.splice(indexOfChat, 1)
       })
     },
-    async renameChat(chatId) {
+    async renameChat(chatId: number) {
       console.group('renameChat')
       const indexOfChat = this.chats.findIndex((chat) => chat.id === chatId)
       const inputValue = this.chats[indexOfChat].inputChangeValue
@@ -146,19 +148,18 @@ export const useChatsStore = defineStore('chats', {
         this.chats[indexOfChat].name = inputValue
         this.toggleChangeChatName(chatId)
       })
-      console.groupEnd()
     },
-    async toggleChangeChatName(chatId) {
+    async toggleChangeChatName(chatId: number) {
       console.group('toggleChangeChatName')
       console.groupEnd()
       const indexOfChat = this.chats.findIndex((chat) => chat.id === chatId)
       this.chats[indexOfChat].editable = !this.chats[indexOfChat].editable
     },
-    changeInputChat(value, chatId) {
+    changeInputChat(value: string, chatId: number) {
       const indexOfChat = this.chats.findIndex((chat) => chat.id === chatId)
       this.chats[indexOfChat].inputChangeValue = value
     },
-    async sendPrompt(prompt, chatId) {
+    async sendPrompt(prompt: string, chatId: number) {
       const authStore = useAuthStore()
       console.log('prompt', prompt)
       console.log('chatId', chatId)
@@ -166,7 +167,7 @@ export const useChatsStore = defineStore('chats', {
       return await ChatsService.sendPrompt(
         prompt,
         this.currentModel,
-        authStore.getToken,
+        authStore.token,
         chatId
       ).then(
         (res) => {
@@ -194,7 +195,7 @@ export const useChatsStore = defineStore('chats', {
           this.chats[indexOfChat].questions.push(newQuestion)
 
           console.groupEnd()
-          this.error = null
+          this.error = ''
           return Promise.resolve({ newAnswer, newQuestion })
         }
         // (error) => {
@@ -203,13 +204,13 @@ export const useChatsStore = defineStore('chats', {
         // }
       )
     },
-    async sendPromptWithFile(prompt, file, chatId) {
+    async sendPromptWithFile(prompt: string, file: File, chatId: number) {
       const authStore = useAuthStore()
 
       return await ChatsService.sendPromptWithFile(
         prompt,
         this.currentModel,
-        authStore.getToken,
+        authStore.token,
         chatId,
         file
       ).then(
@@ -235,7 +236,7 @@ export const useChatsStore = defineStore('chats', {
           this.chats[indexOfChat].questions.push(newQuestion)
 
           console.groupEnd()
-          this.error = null
+          this.error = ''
           return Promise.resolve({ newAnswer, newQuestion })
         },
         (error) => {
@@ -244,16 +245,15 @@ export const useChatsStore = defineStore('chats', {
         }
       )
     },
-    async regenerateQuestion(questionMessage, chatId) {
+    async regenerateQuestion(questionMessage: string, chatId: number) {
       const authStore = useAuthStore()
       console.group('regenerateQuestion')
       return await ChatsService.regenerateQuestion(
         questionMessage,
         this.currentModel,
-        authStore.getToken,
+        authStore.token,
         chatId
       ).then((res) => console.log('res', res))
-      console.groupEnd()
     },
     addPropertiesInChats() {
       this.chats = this.chats.map((chat) => {
@@ -263,13 +263,13 @@ export const useChatsStore = defineStore('chats', {
     async getModels() {
       const authStore = useAuthStore()
 
-      return await ChatsService.getModels(authStore.getToken).then(
+      return await ChatsService.getModels(authStore.token).then(
         (models) => {
           this.models = models
           console.group('getModels')
           console.log('this.models', this.models)
           console.groupEnd()
-          this.error = null
+          this.error = ''
           return Promise.resolve()
         },
         (error) => {
@@ -278,7 +278,7 @@ export const useChatsStore = defineStore('chats', {
         }
       )
     },
-    changeModel(modelId) {
+    changeModel(modelId: number) {
       console.group('changeModel')
       const indexOfModel = this.models.findIndex((model) => model.id === modelId)
       this.currentModel = this.models[indexOfModel].title
@@ -288,16 +288,14 @@ export const useChatsStore = defineStore('chats', {
     async getPromptsLimit() {
       const authStore = useAuthStore()
 
-      return await ChatsService.getPromptsLimit(
-        authStore.getToken,
-      ).then(
+      return await ChatsService.getPromptsLimit(authStore.token).then(
         (res) => {
           console.group('getPromptsLimit')
           console.log('res', res)
           this.promptLimit = res.limit
 
           console.groupEnd()
-          this.error = null
+          this.error = ''
           return Promise.resolve()
         },
         (error) => {
@@ -313,16 +311,14 @@ export const useChatsStore = defineStore('chats', {
         return
       }
 
-      return await ChatsService.minusPromptLimit(
-        authStore.getToken,
-      ).then(
+      return await ChatsService.minusPromptLimit(authStore.token).then(
         (res) => {
           console.group('minusPromptLimit')
           console.log('res', res)
           this.promptLimit -= res.limit
 
           console.groupEnd()
-          this.error = null
+          this.error = ''
           return Promise.resolve()
         },
         (error) => {
@@ -330,7 +326,7 @@ export const useChatsStore = defineStore('chats', {
           return Promise.reject(error.message)
         }
       )
-    },
+    }
   },
   getters: {
     sortedChatsByPeriods(state) {
@@ -461,14 +457,11 @@ export const useChatsStore = defineStore('chats', {
 
       return result.sort((first, second) => first.id - second.id)
     },
-    getterModels(state) {
-      return state.models || []
-    },
-    getCurrentModel(state) {
-      return state.currentModel || ''
-    },
-    getterPromptsLimit(state) {
-      return state.promptLimit || 0
+    getImgPathByModel(state) {
+      return (modelName) => {
+        const modelIndex = state.models.findIndex((model) => model.title === modelName)
+        return state.models[modelIndex]?.photo_url
+      }
     }
   }
 })

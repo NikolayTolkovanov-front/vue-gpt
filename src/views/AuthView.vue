@@ -12,7 +12,7 @@ import AuthHeader from '@/components/Auth/AuthHeader.vue'
 import AuthMain from '@/components/Auth/AuthMain.vue'
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .auth-wrapper {
   display: flex;
   flex-direction: column;

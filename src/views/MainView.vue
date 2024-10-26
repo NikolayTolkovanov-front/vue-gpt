@@ -68,7 +68,7 @@
           <article class="message answer">
             <div class="answer__icon">
               <img
-                src="https://files.oaiusercontent.com/file-hbxowtiyxew901FywZXTcb4V?se=2124-03-22T16%3A51%3A30Z&amp;sp=r&amp;sv=2021-08-06&amp;sr=b&amp;rscc=max-age%3D1209600%2C%20immutable&amp;rscd=attachment%3B%20filename%3Dlogo-brighter.png&amp;sig=d/1A/B6wbaTwAWj2ZuPziepcTlEt6UaqNaJhXsY9DrU%3D"
+                :src="'https://angpt.ru:8000/' + chatsStore.getImgPathByModel(item.answer.model)"
                 alt="GPT"
               />
             </div>
@@ -120,10 +120,9 @@
 
 <script setup lang="ts">
 import { useChatsStore } from '@/stores/chats'
-import { useTemplateRef, onMounted, ref, watch, nextTick, defineProps, defineEmits } from 'vue'
+import { useTemplateRef, onMounted, ref, watch, nextTick, defineProps, type Ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-const emit = defineEmits(['sendPrompt'])
 const props = defineProps({
   newQuestion: {
     type: Object,
@@ -140,9 +139,9 @@ const route = useRoute()
 const router = useRouter()
 
 const messagesContainer = useTemplateRef('messages')
-const questions = ref([])
-const answers = ref([])
-const formattedMessages = ref([])
+const questions: Ref<Array> = ref([])
+const answers: Ref<Array> = ref([])
+const formattedMessages: Ref<Array> = ref([])
 
 function scrollToLastMessage() {
   const messagesList = messagesContainer.value?.children
@@ -156,7 +155,7 @@ function scrollToLastMessage() {
   }
 }
 
-function toggleChangeQuestion(questionId) {
+function toggleChangeQuestion(questionId: number) {
   console.log('questionId', questionId)
   const indexQuestion = formattedMessages.value.findIndex((pair) => {
     return pair.question.id === questionId
@@ -167,11 +166,11 @@ function toggleChangeQuestion(questionId) {
 }
 
 // TODO будет работать при ssl на сервере
-function copyText(text) {
+function copyText(text: string) {
   Navigator.clipboard.writeText(text)
 }
 
-async function getChat(chatId) {
+async function getChat(chatId: number) {
   const chat = await chatsStore.getChat(chatId).catch(() => router.push('/'))
 
   formattedMessages.value = []
@@ -201,8 +200,8 @@ async function getChat(chatId) {
   }
 }
 
-async function regenerateQuestion(prompt, questionId) {
-  await chatsStore.sendPrompt(prompt, route.params['id']).then((res) => {
+async function regenerateQuestion(prompt: string, questionId: number) {
+  await chatsStore.sendPrompt(prompt, Number(route.params['id'])).then((res) => {
     console.log('here', res)
 
     const { newQuestion, newAnswer } = res
@@ -217,7 +216,7 @@ async function regenerateQuestion(prompt, questionId) {
 }
 
 async function regenerateAnswer(prompt) {
-  await chatsStore.sendPrompt(prompt, route.params['id']).then((res) => {
+  await chatsStore.sendPrompt(prompt, Number(route.params['id'])).then((res) => {
     console.log('here', res)
 
     const { newQuestion, newAnswer } = res
@@ -236,6 +235,8 @@ watch(props, () => {
 
   question.hidden = false
   question.changeQuestionValue = ref('')
+
+  answer.model = chatsStore.currentModel
   formattedMessages.value.push({ question, answer })
   nextTick(() => scrollToLastMessage())
 })

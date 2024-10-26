@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { AxiosError } from 'axios'
 
 class ChatsService {
   #baseURL
@@ -6,7 +7,7 @@ class ChatsService {
     this.#baseURL = new URL('https://angpt.ru:8000/')
   }
 
-  #validateError(error) {
+  #validateError(error: AxiosError) {
     if (error.response) {
       console.error('Error response:', error.response.data)
       throw new Error(
@@ -21,7 +22,7 @@ class ChatsService {
     }
   }
 
-  async getChats(token) {
+  async getChats(token: string) {
     try {
       const newUrl = new URL('gpt/chats_list', this.#baseURL)
       newUrl.searchParams.append('token', token)
@@ -37,27 +38,28 @@ class ChatsService {
       }
 
       return response.data
-    } catch (error) {
+    } catch (error: Error | AxiosError) {
       return this.#validateError(error)
     }
   }
 
-  async getChat(chatId) {
+  async getChat(chatId: number) {
     const newUrl = new URL('/chat', this.#baseURL)
-
+    console.log('chatId', typeof chatId);
+    
     try {
-      const response = await axios.post(newUrl, { chat_id: Number(chatId) })
+      const response = await axios.post(newUrl, { chat_id: chatId })
 
       if (!response.data || typeof response.data !== 'object') {
         throw new Error('Чат не получен, нет данных')
       }
       return response.data
-    } catch (error) {
+    } catch (error: Error | AxiosError) {
       return this.#validateError(error)
     }
   }
 
-  async addChat(token, prompt, model) {
+  async addChat(token: string, prompt: string, model: string) {
     const newUrl = new URL('gpt/add_new_chat', this.#baseURL)
 
     try {
@@ -77,7 +79,7 @@ class ChatsService {
     }
   }
 
-  async addChatWithFile(token, prompt, model, file) {
+  async addChatWithFile(token: string, prompt: string, model: string, file: File) {
     const newUrl = new URL('gpt/add_new_chat', this.#baseURL)
 
     const form = new FormData()
@@ -99,7 +101,7 @@ class ChatsService {
     }
   }
 
-  async sendPrompt(prompt, model, token, chatId) {
+  async sendPrompt(prompt: string, model: string, token: string, chatId: number) {
     const newUrl = new URL('gpt/send_prompt', this.#baseURL)
 
     try {
@@ -119,7 +121,7 @@ class ChatsService {
     }
   }
 
-  async sendPromptWithFile(prompt, model, token, chatId, file) {
+  async sendPromptWithFile(prompt: string, model: string, token: string, chatId: number, file: File) {
     const newUrl = new URL('gpt/prompt_with_file', this.#baseURL)
 
     const form = new FormData()
@@ -141,7 +143,7 @@ class ChatsService {
     }
   }
 
-  async regenerateQuestion(questionMessage, model, token, chatId) {
+  async regenerateQuestion(questionMessage, model: string, token: string, chatId: number) {
     const newUrl = new URL('gpt/regenerate', this.#baseURL)
 
     try {
@@ -161,7 +163,7 @@ class ChatsService {
     }
   }
 
-  async renameChat(prompt, chatId) {
+  async renameChat(prompt: string, chatId: number) {
     const newUrl = new URL('/gpt/chat_rename', this.#baseURL)
 
     try {
@@ -179,7 +181,7 @@ class ChatsService {
     }
   }
 
-  async deleteChat(chatId) {
+  async deleteChat(chatId: number) {
     try {
       const newURL = new URL(`gpt/delete_chat`, this.#baseURL)
       const response = await axios.post(newURL, {
@@ -195,7 +197,7 @@ class ChatsService {
     }
   }
 
-  async getModels(token) {
+  async getModels(token: string) {
     try {
       const newUrl = new URL('gpt/get_user_gpts', this.#baseURL)
 
@@ -217,7 +219,7 @@ class ChatsService {
     }
   }
 
-  async getPromptsLimit(token) {
+  async getPromptsLimit(token: string) {
     try {
       const newUrl = new URL(`gpt/get_req_limit?token=${token}`, this.#baseURL)
 
@@ -233,7 +235,7 @@ class ChatsService {
     }
   }
 
-  async minusPromptLimit(token) {
+  async minusPromptLimit(token: string) {
     try {
       const newUrl = new URL(`gpt/minus_limit?token=${token}`, this.#baseURL)
 

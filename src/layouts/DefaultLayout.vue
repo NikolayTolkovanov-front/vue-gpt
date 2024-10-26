@@ -1,19 +1,3 @@
-<script setup lang="ts">
-import { RouterView } from 'vue-router'
-import ChatHeader from '@/components/Chat/ChatHeader.vue'
-import ChatFooter from '@/components/Chat/ChatFooter.vue'
-import ChatAside from '@/components/Chat/ChatAside.vue'
-import { onMounted, ref } from 'vue'
-
-const newQuestion = ref({})
-const newAnswer = ref({})
-
-function getPrompt(prompt) {
-  newQuestion.value = prompt.newQuestion
-  newAnswer.value = prompt.newAnswer
-}
-</script>
-
 <template>
   <div class="wrapper">
     <ChatAside />
@@ -33,4 +17,22 @@ function getPrompt(prompt) {
   </div>
 </template>
 
-<style scoped></style>
+<script setup lang="ts">
+import { RouterView } from 'vue-router'
+import ChatHeader from '@/components/Chat/ChatHeader.vue'
+import ChatFooter from '@/components/Chat/ChatFooter.vue'
+import ChatAside from '@/components/Chat/ChatAside.vue'
+import { ref } from 'vue'
+
+const newQuestion = ref({})
+const newAnswer = ref({})
+
+function getPrompt(prompt) {
+  console.log('promptprompt', prompt)
+
+  newQuestion.value = prompt.newQuestion
+  newAnswer.value = prompt.newAnswer
+}
+</script>
+
+<style lang="scss" scoped></style>

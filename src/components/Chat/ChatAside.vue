@@ -78,10 +78,10 @@
               <ul class="popup-list">
                 <li
                   @click="hide"
-                  v-for="model of chatsStore.getterModels"
+                  v-for="model of chatsStore.models"
                   :key="model.id"
                   class="popup-list__item"
-                  :class="{ 'active': chatsStore.getCurrentModel === model.title }"
+                  :class="{ active: chatsStore.currentModel === model.title }"
                 >
                   <button
                     @click="changeModel(model.id)"
@@ -241,7 +241,7 @@
       <div class="aside-footer">
         <p class="aside-footer__counter">
           Осталось запросов:
-          <span class="aside-footer__counter-number">{{ chatsStore.getterPromptsLimit }}</span>
+          <span class="aside-footer__counter-number">{{ chatsStore.promptLimit }}</span>
         </p>
         <a
           href="settings.html"
@@ -317,24 +317,24 @@ function logout() {
   router.push('/login')
 }
 
-async function toggleChangeChatName(chatId) {
+async function toggleChangeChatName(chatId: number) {
   await chatsStore.toggleChangeChatName(chatId)
   changeChatNameInput.value[0].focus()
 }
 
-function changeInputChat(event, chatId) {
+function changeInputChat(event: Event, chatId: number) {
   chatsStore.changeInputChat(event.target.value, chatId)
 }
 
-async function renameChat(chatId) {
+async function renameChat(chatId: number) {
   await chatsStore.renameChat(chatId)
 }
 
-async function deleteChat(chatId) {
+async function deleteChat(chatId: number) {
   await chatsStore.deleteChat(chatId).then(() => router.push('/'))
 }
 
-function changeModel(modelId) {
+function changeModel(modelId: number) {
   chatsStore.changeModel(modelId)
 }
 

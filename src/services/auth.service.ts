@@ -1,4 +1,6 @@
 import axios from 'axios'
+import { AxiosError } from 'axios'
+import type { User } from '@/interfaces/services/auth.interface'
 
 class AuthService {
   #baseURL
@@ -6,7 +8,7 @@ class AuthService {
     this.#baseURL = new URL('https://angpt.ru:8000/')
   }
 
-  #validateError(error) {
+  #validateError(error: AxiosError) {
     if (error.response) {
       console.error('Error response:', error.response.data)
       throw new Error(
@@ -21,7 +23,7 @@ class AuthService {
     }
   }
 
-  async register(user) {
+  async register(user: User) {
     try {
       const newUrl = new URL('auth/register', this.#baseURL)
       const response = await axios.post(newUrl, {
@@ -39,7 +41,7 @@ class AuthService {
     }
   }
 
-  async login(user) {
+  async login(user: User) {
     try {
       const newUrl = new URL('auth/authorize', this.#baseURL)
       const response = await axios.post(newUrl, {
@@ -76,31 +78,15 @@ class AuthService {
     }
   }
 
-  async addChat(name, text, date) {
+  async getGals() {
     try {
-      const response = await axios.post(this.#baseURL, {
-        name,
-        text,
-        date
-      })
+      const newUrl = new URL('admink/get_gals', this.#baseURL)
+      const response = await axios.get(newUrl)
 
-      if (!response.data || typeof response.data !== 'object') {
-        throw new Error('Chat not saved, no data')
+      if (!response.data) {
+        throw new Error('Попробуйте позже')
       }
-      return response.data
-    } catch (error) {
-      return this.#validateError(error)
-    }
-  }
 
-  async removeChat(chatId) {
-    try {
-      const newURL = new URL(`chats/${chatId}`, this.#baseURL)
-      const response = await axios.delete(newURL)
-
-      if (!response.data || typeof response.data !== 'string') {
-        throw new Error('Chat not removed, no data')
-      }
       return response.data
     } catch (error) {
       return this.#validateError(error)

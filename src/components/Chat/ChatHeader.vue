@@ -38,31 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, useTemplateRef } from 'vue'
 import { useMainStore } from '@/stores/main'
-import { useTippy, Tippy } from 'vue-tippy'
-
-const headerChatMenu = useTemplateRef('header-chat-menu')
-const headerChatBtn = useTemplateRef('header-chat-btn')
-
-onMounted(() => {
-  // useTippy(headerChatBtn.value, {
-  //   content: headerChatMenu.value?.innerHTML,
-  //   allowHTML: true,
-  //   trigger: 'click',
-  //   arrow: false,
-  //   placement: 'bottom-start',
-  //   interactive: true,
-  //   theme: 'list',
-  //   onShow(instance) {
-  //     if (window.innerWidth < 769) {
-  //       instance.setProps({ placement: 'bottom' })
-  //     } else {
-  //       instance.setProps({ placement: 'bottom-start' })
-  //     }
-  //   }
-  // })
-})
 
 const mainStore = useMainStore()
 </script>

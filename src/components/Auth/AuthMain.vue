@@ -4,7 +4,7 @@
       <div class="title-wrapper">
         <h1 class="title">{{ route.meta.title }}</h1>
       </div>
-      <p class="invalid-email-error-message">{{ authStore.errorMessage }}</p>
+      <p class="invalid-email-error-message">{{ authStore.error }}</p>
       <Form
         @submit="submit"
         novalidate
@@ -62,6 +62,19 @@
             </div>
           </ErrorMessage>
         </div>
+        <div v-if="route.path.startsWith('/register')" class="gals">
+          <div v-for="gal of authStore.gals" :key="gal.id" class="checkbox-wrapper">
+            <input
+              :is-required="1"
+              ref="gals"
+              :id="'checkbox-' + gal.id"
+              class="substituted"
+              type="checkbox"
+              aria-hidden="true"
+            />
+            <label :for="'checkbox-' + gal.id" v-html="authStore.formattedTitle(gal.title, gal.keyword, gal.url_addr)"></label>
+          </div>
+        </div>
         <button class="continue-btn">Продолжить</button>
         <p class="other-page">
           {{
@@ -73,33 +86,6 @@
             >{{ route.path === '/register' ? 'Войти' : 'Зарегистрироваться' }}</RouterLink
           >
         </p>
-        <!-- <div class="divider-wrapper"><span class="divider">или</span></div> -->
-        <!-- <div class="social-section">
-        <button class="social-btn">
-          <span class="social-logo-wrapper"
-            ><img
-              class="social-logo"
-              src="/assets/google-logo-NePEveMl.svg"
-              alt="Логотип Google" /></span
-          ><span class="social-text">Продолжить с Google</span></button
-        ><button class="social-btn">
-          <span class="social-logo-wrapper"
-            ><img
-              class="social-logo"
-              src="/assets/microsoft-logo-BUXxQnXH.svg"
-              alt="Логотип Microsoft" /></span
-          ><span class="social-text"
-            >Продолжить с учетной записью Microsoft</span
-          ></button
-        ><button class="social-btn">
-          <span class="social-logo-wrapper"
-            ><img
-              class="social-logo"
-              src="/assets/apple-logo-tAoxPOUx.svg"
-              alt="Логотип Apple" /></span
-          ><span class="social-text">Продолжить с Apple</span>
-        </button>
-      </div> -->
       </Form>
     </section>
   </main>
@@ -109,6 +95,7 @@
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { Form, Field, ErrorMessage } from 'vee-validate'
 import { useAuthStore } from '@/stores/auth'
+import { onMounted, useTemplateRef } from 'vue';
 
 const router = useRouter()
 const route = useRoute()
@@ -117,8 +104,9 @@ const authStore = useAuthStore()
 
 const emailModel = defineModel('emailModel')
 const passwordModel = defineModel('passwordModel')
+const gals = useTemplateRef('gals')
 
-function validateEmail(value) {
+function validateEmail(value: string) {
   if (!value) {
     return 'Это поле обязательно'
   }
@@ -131,7 +119,7 @@ function validateEmail(value) {
   return true
 }
 
-function validatePassword(value) {
+function validatePassword(value: string) {
   if (!value) {
     return 'Это поле обязательно'
   }
@@ -144,21 +132,35 @@ function validatePassword(value) {
 }
 
 async function submit(user) {
-  emailModel.value = ''
-  passwordModel.value = ''
 
+  
   if (route.path.startsWith('/register')) {
+    for (const gal of gals.value) {
+      console.log('gal', gal.getAttribute('is-required'), gal.checked);
+    }
+
     await authStore
       .register(user)
-      .then(() => router.push('/login'))
+      .then(() => {
+        router.push('/login')
+      })
       .catch((error) => console.log('error' + error))
   } else {
     await authStore
       .login(user)
-      .then(() => router.push('/'))
+      .then(() => {
+        router.push('/')
+      })
       .catch((error) => console.log('error' + error))
   }
 }
+
+onMounted(async () => {
+  console.log();
+  if (route.path.startsWith('/register')) {
+    await authStore.getGals()
+  }
+})
 </script>
 
 <style scoped>
@@ -314,6 +316,113 @@ a {
   background-position: 0 0;
   background-repeat: no-repeat;
   background-size: 16px;
+}
+.gals {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .checkbox-wrapper [type='checkbox'].substituted {
+    margin: 0;
+    width: 0;
+    height: 0;
+    display: inline;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  .checkbox-wrapper [type='checkbox'].substituted + label:before {
+    content: '';
+    display: inline-block;
+    vertical-align: top;
+    height: 1.15em;
+    width: 1.15em;
+    margin-right: 0.6em;
+    color: rgba(0, 0, 0, 0.275);
+    border: solid 0.06em;
+    box-shadow:
+      0 0 0.04em,
+      0 0.06em 0.16em -0.03em inset,
+      0 0 0 0.07em transparent inset;
+    border-radius: 0.2em;
+    background:
+      url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xml:space="preserve" fill="white" viewBox="0 0 9 9"><rect x="0" y="4.3" transform="matrix(-0.707 -0.7072 0.7072 -0.707 0.5891 10.4702)" width="4.3" height="1.6" /><rect x="2.2" y="2.9" transform="matrix(-0.7071 0.7071 -0.7071 -0.7071 12.1877 2.9833)" width="6.1" height="1.7" /></svg>')
+        no-repeat center,
+      white;
+    background-size: 0;
+    will-change: color, border, background, background-size, box-shadow;
+    transform: translate3d(0, 0, 0);
+    transition:
+      color 0.1s,
+      border 0.1s,
+      background 0.15s,
+      box-shadow 0.1s;
+  }
+  .checkbox-wrapper [type='checkbox'].substituted:enabled:active + label:before,
+  .checkbox-wrapper [type='checkbox'].substituted:enabled + label:active:before {
+    box-shadow:
+      0 0 0.04em,
+      0 0.06em 0.16em -0.03em transparent inset,
+      0 0 0 0.07em rgba(0, 0, 0, 0.1) inset;
+    background-color: #f0f0f0;
+  }
+  .checkbox-wrapper [type='checkbox'].substituted:checked + label:before {
+    background-color: #3b99fc;
+    background-size: 0.75em;
+    color: rgba(0, 0, 0, 0.075);
+  }
+  .checkbox-wrapper [type='checkbox'].substituted:checked:enabled:active + label:before,
+  .checkbox-wrapper [type='checkbox'].substituted:checked:enabled + label:active:before {
+    background-color: #0a7ffb;
+    color: rgba(0, 0, 0, 0.275);
+  }
+  .checkbox-wrapper [type='checkbox'].substituted:focus + label:before {
+    box-shadow:
+      0 0 0.04em,
+      0 0.06em 0.16em -0.03em transparent inset,
+      0 0 0 0.07em rgba(0, 0, 0, 0.1) inset,
+      0 0 0 3.3px rgba(65, 159, 255, 0.55),
+      0 0 0 5px rgba(65, 159, 255, 0.3);
+  }
+  .checkbox-wrapper [type='checkbox'].substituted:focus:active + label:before,
+  .checkbox-wrapper [type='checkbox'].substituted:focus + label:active:before {
+    box-shadow:
+      0 0 0.04em,
+      0 0.06em 0.16em -0.03em transparent inset,
+      0 0 0 0.07em rgba(0, 0, 0, 0.1) inset,
+      0 0 0 3.3px rgba(65, 159, 255, 0.55),
+      0 0 0 5px rgba(65, 159, 255, 0.3);
+  }
+  .checkbox-wrapper [type='checkbox'].substituted:disabled + label:before {
+    opacity: 0.5;
+  }
+
+  .checkbox-wrapper [type='checkbox'].substituted.dark + label:before {
+    color: rgba(255, 255, 255, 0.275);
+    background-color: #222;
+    background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xml:space="preserve" fill="rgba(34, 34, 34, 0.999)" viewBox="0 0 9 9"><rect x="0" y="4.3" transform="matrix(-0.707 -0.7072 0.7072 -0.707 0.5891 10.4702)" width="4.3" height="1.6" /><rect x="2.2" y="2.9" transform="matrix(-0.7071 0.7071 -0.7071 -0.7071 12.1877 2.9833)" width="6.1" height="1.7" /></svg>');
+  }
+  .checkbox-wrapper [type='checkbox'].substituted.dark:enabled:active + label:before,
+  .checkbox-wrapper [type='checkbox'].substituted.dark:enabled + label:active:before {
+    background-color: #444;
+    box-shadow:
+      0 0 0.04em,
+      0 0.06em 0.16em -0.03em transparent inset,
+      0 0 0 0.07em rgba(255, 255, 255, 0.1) inset;
+  }
+  .checkbox-wrapper [type='checkbox'].substituted.dark:checked + label:before {
+    background-color: #a97035;
+    color: rgba(255, 255, 255, 0.075);
+  }
+  .checkbox-wrapper [type='checkbox'].substituted.dark:checked:enabled:active + label:before,
+  .checkbox-wrapper [type='checkbox'].substituted.dark:checked:enabled + label:active:before {
+    background-color: #c68035;
+    color: rgba(0, 0, 0, 0.275);
+  }
+  .checkbox-wrapper [type='checkbox'].substituted + label {
+    -webkit-user-select: none;
+    user-select: none;
+  }
 }
 .continue-btn {
   display: flex;
