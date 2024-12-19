@@ -24,14 +24,14 @@ import ChatFooter from '@/components/Chat/ChatFooter.vue'
 import ChatAside from '@/components/Chat/ChatAside.vue'
 import { ref } from 'vue'
 
+import type { NewMessage } from '@/interfaces/stores/chats'
+
 const newQuestion = ref({})
 const newAnswer = ref({})
 
-function getPrompt(prompt) {
-  console.log('promptprompt', prompt)
-
-  newQuestion.value = prompt.newQuestion
-  newAnswer.value = prompt.newAnswer
+function getPrompt(response: NewMessage) {
+  newQuestion.value = response.newQuestion
+  newAnswer.value = response.newAnswer
 }
 </script>
 

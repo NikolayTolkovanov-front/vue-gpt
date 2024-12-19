@@ -45,8 +45,7 @@ class ChatsService {
 
   async getChat(chatId: number) {
     const newUrl = new URL('/chat', this.#baseURL)
-    console.log('chatId', typeof chatId);
-    
+
     try {
       const response = await axios.post(newUrl, { chat_id: chatId })
 
@@ -72,7 +71,6 @@ class ChatsService {
       if (!response.data || typeof response.data !== 'object' || !response.data.response) {
         throw new Error('Чат не сохранен, нет данных')
       }
-      console.log('response.data', response.data)
       return response.data
     } catch (error) {
       return this.#validateError(error)
@@ -80,13 +78,13 @@ class ChatsService {
   }
 
   async addChatWithFile(token: string, prompt: string, model: string, file: File) {
-    const newUrl = new URL('gpt/add_new_chat', this.#baseURL)
+    const newUrl = new URL('gpt/add_chat_with_file', this.#baseURL)
 
     const form = new FormData()
     form.append('prompt', prompt)
     form.append('model', model)
     form.append('token', token)
-    form.append('avatar', file)
+    form.append('user-file', file)
 
     try {
       const response = await axios.post(newUrl, form)
@@ -94,7 +92,6 @@ class ChatsService {
       if (!response.data || typeof response.data !== 'object' || !response.data.response) {
         throw new Error('Чат не сохранен, нет данных')
       }
-      console.log('response.data', response.data)
       return response.data
     } catch (error) {
       return this.#validateError(error)
@@ -121,7 +118,13 @@ class ChatsService {
     }
   }
 
-  async sendPromptWithFile(prompt: string, model: string, token: string, chatId: number, file: File) {
+  async sendPromptWithFile(
+    prompt: string,
+    model: string,
+    token: string,
+    chatId: number,
+    file: File
+  ) {
     const newUrl = new URL('gpt/prompt_with_file', this.#baseURL)
 
     const form = new FormData()
@@ -129,7 +132,7 @@ class ChatsService {
     form.append('model', model)
     form.append('token', token)
     form.append('chat_id', chatId)
-    form.append('avatar', file)
+    form.append('user-file', file)
 
     try {
       const response = await axios.post(newUrl, form)
@@ -227,6 +230,24 @@ class ChatsService {
 
       if (!response.data || typeof response.data !== 'object') {
         throw new Error('No limit found')
+      }
+
+      return response.data
+    } catch (error) {
+      return this.#validateError(error)
+    }
+  }
+
+  async getFilesFormats(token: string) {
+    try {
+      const newUrl = new URL(`gpt/get_formats`, this.#baseURL)
+
+      const response = await axios.post(newUrl, {
+        token
+      })
+
+      if (!response.data || typeof response.data !== 'object') {
+        throw new Error('Форматов нет')
       }
 
       return response.data

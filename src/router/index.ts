@@ -65,7 +65,8 @@ const router = createRouter({
     {
       path: '/logout',
       meta: {
-        auth: true
+        auth: true,
+        logout: true
       },
       component: AuthLayout,
       children: [
@@ -87,19 +88,18 @@ router.beforeEach((to, from, next) => {
   const isAuthenticated = !!authStore.token
   const requireAuth = to.matched.some((record) => record.meta.auth)
 
-  console.group('Check auth')
-  console.log('isAuthenticated', isAuthenticated)
-  console.log('requireAuth', requireAuth)
-  console.groupEnd()
-
   if (!requireAuth) {
-    next()
-  }
-
-  if (requireAuth && isAuthenticated) {
-    next()
+    if ((to.path === '/login' || to.path === '/register') && isAuthenticated) {
+      next('/')
+    } else {
+      next()
+    }
   } else {
-    next('login')
+    if (!isAuthenticated || to.path === '/logout') {
+      next('/login')
+    } else {
+      next()
+    }
   }
 })
 

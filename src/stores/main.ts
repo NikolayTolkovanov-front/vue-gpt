@@ -9,9 +9,5 @@ export const useMainStore = defineStore('main', {
       this.asideHidden = !this.asideHidden
     }
   },
-  getters: {
-    getAsideHidden() {
-      return this.asideHidden
-    }
-  }
+  getters: {}
 })

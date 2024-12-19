@@ -28,10 +28,11 @@ class AuthService {
       const newUrl = new URL('auth/register', this.#baseURL)
       const response = await axios.post(newUrl, {
         email: user.email,
-        password: user.password
+        password: user.password,
+        gals: user.gals
       })
 
-      if (!response.data || response.data.status !== 'OK') {
+      if (!response.data) {
         throw new Error('Не удалось зарегистрироваться, попробуйте позже')
       }
 

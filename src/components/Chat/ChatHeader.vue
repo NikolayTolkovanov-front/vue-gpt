@@ -4,7 +4,7 @@
       <button
         @click="mainStore.toggleAside"
         class="header__toggle-btn"
-        :class="{ hidden: !mainStore.getAsideHidden }"
+        :class="{ hidden: !mainStore.asideHidden }"
       >
         <svg
           width="24"

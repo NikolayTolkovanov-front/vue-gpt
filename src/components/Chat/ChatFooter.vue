@@ -14,7 +14,6 @@
             name="file"
             ref="input-file"
             tabindex="-1"
-            accept="image/*"
           />
           <div class="input-file__btn">
             <Tippy
@@ -95,6 +94,40 @@
           </div>
         </div>
         <div class="prompt">
+          <div class="prompt-files">
+            <p
+              v-if="fileErrorMessage.length"
+              class="prompt-files__error-msg"
+            >
+              {{ fileErrorMessage }}
+            </p>
+            <ul class="prompt-files__list">
+              <li
+                v-for="file of files"
+                :key="file.id"
+                class="prompt-files__list-item"
+              >
+                <span class="prompt-files__list-item-name">{{ file.name }}</span>
+                <div
+                  @click="closeFile(file.id)"
+                  class="prompt-files__list-item-btn"
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      clip-rule="evenodd"
+                      d="M5.63603 5.63604C6.02656 5.24552 6.65972 5.24552 7.05025 5.63604L12 10.5858L16.9497 5.63604C17.3403 5.24552 17.9734 5.24552 18.364 5.63604C18.7545 6.02657 18.7545 6.65973 18.364 7.05025L13.4142 12L18.364 16.9497C18.7545 17.3403 18.7545 17.9734 18.364 18.364C17.9734 18.7545 17.3403 18.7545 16.9497 18.364L12 13.4142L7.05025 18.364C6.65972 18.7545 6.02656 18.7545 5.63603 18.364C5.24551 17.9734 5.24551 17.3403 5.63603 16.9497L10.5858 12L5.63603 7.05025C5.24551 6.65973 5.24551 6.02657 5.63603 5.63604Z"
+                    ></path>
+                  </svg>
+                </div>
+              </li>
+            </ul>
+          </div>
           <div
             class="prompt-file"
             :class="{ hidden: inputFileImg === null }"
@@ -132,8 +165,10 @@
             />
             <span
               data-placeholder="Введите текст"
-              :contenteditable="hasLimitAndModel"
+              :contenteditable="hasLimitAndModel ? 'plaintext-only' : false"
+              @keydown="handleChangePrompt($event, values)"
               @input="changePrompt"
+              ref="prompt-text"
               class="prompt__text"
               >{{ prompt }}</span
             >
@@ -165,11 +200,15 @@
 </template>
 
 <script setup lang="ts">
-import { defineModel, useTemplateRef, ref, watch, computed, type Ref } from 'vue'
+import { defineModel, useTemplateRef, ref, watch, computed, onMounted, type Ref } from 'vue'
 import { Form, Field } from 'vee-validate'
 import { useChatsStore } from '@/stores/chats'
 import { useRoute, useRouter } from 'vue-router'
 import { Tippy } from 'vue-tippy'
+import { v4 as uuidv4 } from 'uuid'
+
+import type { NewFile, PromptParams } from '@/interfaces/stores/chats'
+import type { GenericObject } from 'vee-validate'
 
 const emit = defineEmits(['sendPrompt'])
 
@@ -184,64 +223,143 @@ const inputFile = useTemplateRef('input-file')
 const inputFileImg: Ref<File | null> = ref(null)
 const inputImgPath: Ref<string> = ref('')
 
+const files: Ref<Array<NewFile>> = ref([])
+const filesToSend: Ref<Array<File>> = ref([])
+const fileErrorMessage: Ref<string> = ref('')
+const fileSize: number = 16 * 1024
+const imagesFormats: Array<string> = ['HEIC', 'jpg', 'jpeg', 'JPEG', 'png', 'PNG', 'GIF', 'gif']
+
 const hasLimitAndModel = computed(() => {
   return chatsStore.promptLimit !== 0 && chatsStore.currentModel.length !== 0
 })
 
+function handleChangePrompt(event: KeyboardEvent, values: GenericObject) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault()
+    submit(values)
+  }
+}
+
 function changePrompt(event: Event) {
-  prompt.value = event.target.textContent
+  const target = event.target as HTMLElement
+  prompt.value = target.textContent
 }
 
 function openFileMenu() {
-  console.log('open')
-
-  inputFile.value.click()
+  if (inputFile.value) {
+    inputFile.value.click()
+  }
 }
 
 function chooseFile(event: Event) {
-  const files = event.target.files
-  console.log('files', files)
+  const target = event.target as HTMLInputElement
 
-  if (files.length) {
-    const imgFile = files[0]
+  const choosedFiles = target.files
 
-    inputFileImg.value = imgFile
-    inputImgPath.value = URL.createObjectURL(imgFile)
-    console.log('inputImgPath.value', inputImgPath.value)
-  } else if (inputFileImg.value) {
-    closeImg()
+  if (choosedFiles) {
+    if (choosedFiles.length > 1) {
+      files.value = []
+
+      for (const file of choosedFiles) {
+        if (file.size > fileSize) {
+          fileErrorMessage.value = 'Файлы должны быть меньше 16кб'
+          return
+        }
+        const newFile = {
+          id: uuidv4(),
+          name: file.name
+        }
+        filesToSend.value.push(file)
+        files.value.push(newFile)
+      }
+
+      if (fileErrorMessage.value.length) {
+        fileErrorMessage.value = ''
+      }
+    } else if (choosedFiles.length) {
+      files.value = []
+
+      const file = choosedFiles[0]
+      const isValidFormat = chatsStore.formatFiles.some((type) => type === file.type.split('/')[1])
+      const isImg = imagesFormats.some((type) => type === file.type.split('/')[1])
+
+      if (!isValidFormat) {
+        fileErrorMessage.value =
+          'Такой формат файла не поддерживается, поддерживаются ' +
+          chatsStore.formatFiles.join(', ')
+        return
+      }
+
+      if (!isImg) {
+        if (file.size > fileSize) {
+          fileErrorMessage.value = 'Файлы должны быть меньше 16кб'
+          return
+        }
+      }
+
+      const newFile: NewFile = {
+        id: uuidv4(),
+        name: file.name
+      }
+      filesToSend.value.push(file)
+      files.value.push(newFile)
+
+      if (fileErrorMessage.value.length) {
+        fileErrorMessage.value = ''
+      }
+      // const imgFile = choosedFiles[0]
+
+      // inputFileImg.value = imgFile
+      // inputImgPath.value = URL.createObjectURL(imgFile)
+    } else {
+      closeImg()
+    }
+  }
+  console.groupEnd()
+}
+
+function closeFile(fileId: string) {
+  const indexOfFile = files.value.findIndex((file) => file.id === fileId)
+  files.value.splice(indexOfFile, 1)
+
+  if (fileErrorMessage.value.length) {
+    fileErrorMessage.value = ''
   }
 }
 
 function closeImg() {
-  console.log('inputFile.value', inputFile.value);
+  if (files.value.length) {
+    files.value = []
+  }
+
+  if (filesToSend.value.length) {
+    filesToSend.value = []
+  }
+
+  if (fileErrorMessage.value.length) {
+    fileErrorMessage.value = ''
+  }
 
   if (inputFile.value.value) {
     inputFile.value.value = ''
   }
 
-  if (inputFileImg.value) {
-    inputFileImg.value = null
-  }
+  // if (inputFileImg.value) {
+  //   inputFileImg.value = null
+  // }
 
-  if (inputImgPath.value.length) {
-    inputImgPath.value = ''
-  }
-  
-  // inputFile.value.value = ''
-  // inputFileImg.value = null
-  // inputImgPath.value = ''
+  // if (inputImgPath.value.length) {
+  //   inputImgPath.value = ''
+  // }
 }
 
-async function submit(chat) {
+async function submit(chat: GenericObject) {
   prompt.value = ''
 
   if (route.path.startsWith('/chat') && chatsStore.chats.length) {
-    console.log('make sendPrompt')
-
-    if (inputFileImg.value) {
+    if (files.value.length) {
       await chatsStore
-        .sendPromptWithFile(chat.prompt, inputFileImg.value, Number(route.params['id']))
+        .sendPromptWithFile(chat.prompt, filesToSend.value, Number(route.params['id']))
         .then((res) => {
           emit('sendPrompt', res)
           chatsStore.minusPromptLimit()
@@ -264,12 +382,9 @@ async function submit(chat) {
   }
 
   if (route.path.startsWith('/')) {
-    console.log('make addChat')
-    console.log('chat.prompt', chat.prompt)
-
-    if (inputFileImg.value) {
+    if (files.value.length) {
       await chatsStore
-        .addChatWithFile(chat.prompt, inputFileImg.value)
+        .addChatWithFile(chat.prompt, filesToSend.value)
         .then((chatId) => {
           router.push(`/chat/${chatId}`)
           chatsStore.minusPromptLimit()
@@ -293,9 +408,14 @@ async function submit(chat) {
 watch(
   () => route.params['id'],
   () => {
+    files.value = []
     closeImg()
   }
 )
+
+onMounted(async () => {
+  await chatsStore.getFilesFormats()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -359,6 +479,7 @@ watch(
       width: 100%;
     }
 
+    // для картинок
     .prompt-file {
       display: flex;
       position: relative;
@@ -402,6 +523,49 @@ watch(
           height: 16px;
           fill: $primary;
         }
+      }
+    }
+
+    .prompt-files {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+
+      &__error-msg {
+        padding-top: 5px;
+        font-size: 16px;
+        color: rgba(255, 0, 0, 0.668);
+      }
+
+      &__list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      &__list-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid $primary;
+        border-radius: 20px;
+        padding: 0 10px;
+      }
+
+      &__list-item-name {
+        color: $primary;
+        max-width: 70px;
+        overflow: hidden;
+        padding: 10px 0;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+
+      &__list-item-btn {
+        width: 20px;
+        height: 20px;
+        fill: $primary;
+        cursor: pointer;
       }
     }
 

@@ -2,11 +2,11 @@
   <div
     @click="mainStore.toggleAside"
     class="overflow"
-    :class="{ hidden: mainStore.getAsideHidden }"
+    :class="{ hidden: mainStore.asideHidden }"
   ></div>
   <nav
     class="aside"
-    :class="{ hidden: mainStore.getAsideHidden }"
+    :class="{ hidden: mainStore.asideHidden }"
   >
     <div class="aside__body">
       <div class="aside-header">
@@ -72,7 +72,12 @@
           :max-width="210"
           theme="list"
         >
-          <button class="bots-list-btn">Все GPTs</button>
+          <button
+            :disabled="!chatsStore.models.length"
+            class="bots-list-btn"
+          >
+            Все GPTs
+          </button>
           <template #content="{ hide }">
             <nav class="popup-menu">
               <ul class="popup-list">
@@ -89,7 +94,7 @@
                   >
                     <div class="popup-list__item-icon bots-list__icon--left">
                       <img
-                        :src="'https://angpt.ru:8000/' + model.photo_url"
+                        :src="model.photo_url"
                         alt=""
                       />
                     </div>
@@ -310,20 +315,24 @@ const chatsStore = useChatsStore()
 const router = useRouter()
 const route = useRoute()
 
-const changeChatNameInput = useTemplateRef('changeChatNameInput')
+const changeChatNameInput = useTemplateRef<Array<HTMLElement>>('changeChatNameInput')
 
-function logout() {
-  authStore.logout()
-  router.push('/login')
+async function logout() {
+  await authStore.logout()
+  router.push('/logout')
 }
 
 async function toggleChangeChatName(chatId: number) {
   await chatsStore.toggleChangeChatName(chatId)
-  changeChatNameInput.value[0].focus()
+
+  if (changeChatNameInput.value) {
+    changeChatNameInput.value[0].focus()
+  }
 }
 
 function changeInputChat(event: Event, chatId: number) {
-  chatsStore.changeInputChat(event.target.value, chatId)
+  const target = event.target as HTMLInputElement
+  chatsStore.changeInputChat(target.value, chatId)
 }
 
 async function renameChat(chatId: number) {
@@ -425,6 +434,10 @@ onMounted(async () => {
 
       &:hover {
         background-color: #2f2f2f;
+      }
+
+      &:disabled {
+        background-color: #4f4f4f;
       }
     }
 

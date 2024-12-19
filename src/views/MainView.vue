@@ -1,7 +1,5 @@
 <!-- eslint-disable vue/require-v-for-key -->
 <template>
-  <!-- maw 768px -->
-
   <div class="scroll-container">
     <div class="container">
       <div
@@ -62,13 +60,20 @@
                   ></path>
                 </svg>
               </button>
-              <p class="question__message-text">{{ item.question.message }}</p>
+              <p class="question__message-text">
+                <div v-if="item.question.filename" class="question__file">
+                  <p class="question__file-title">Имя файла:</p>
+                  <p class="question__file-name">{{ item.question.filename }}</p>
+                  <div class="divider"></div>
+                </div>
+                {{ item.question.message }}
+              </p>
             </div>
           </article>
           <article class="message answer">
             <div class="answer__icon">
               <img
-                :src="'https://angpt.ru:8000/' + chatsStore.getImgPathByModel(item.answer.model)"
+                :src="chatsStore.getImgPathByModel(item.answer.model)"
                 alt="GPT"
               />
             </div>
@@ -94,6 +99,7 @@
                   </svg>
                 </button>
                 <button
+                :disabled="!chatsStore.currentModel.length"
                   @click="regenerateAnswer(item.answer.message)"
                   class="answer__btn regenerate-text-btn"
                 >
@@ -165,9 +171,8 @@ function toggleChangeQuestion(questionId: number) {
     !formattedMessages.value[indexQuestion].question.hidden
 }
 
-// TODO будет работать при ssl на сервере
 function copyText(text: string) {
-  Navigator.clipboard.writeText(text)
+  if (navigator.clipboard) navigator.clipboard?.writeText(text)
 }
 
 async function getChat(chatId: number) {
@@ -215,7 +220,7 @@ async function regenerateQuestion(prompt: string, questionId: number) {
   scrollToLastMessage()
 }
 
-async function regenerateAnswer(prompt) {
+async function regenerateAnswer(prompt: string) {
   await chatsStore.sendPrompt(prompt, Number(route.params['id'])).then((res) => {
     console.log('here', res)
 
@@ -244,7 +249,7 @@ watch(props, () => {
 watch(
   () => route.params['id'],
   async (newId) => {
-    await getChat(newId)
+    await getChat(Number(newId))
     nextTick(() => scrollToLastMessage())
   }
 )
@@ -261,7 +266,7 @@ onMounted(async () => {
     }
     return
   }
-  await getChat(route.params['id']).catch(() => router.push('/'))
+  await getChat(Number(route.params['id'])).catch(() => router.push('/'))
 
   nextTick(() => scrollToLastMessage())
 })
@@ -311,6 +316,14 @@ onMounted(async () => {
       &.hidden {
         display: none;
       }
+    }
+
+    .divider {
+      display: block;
+      width: 100%;
+      height: 1px;
+      margin: 4px 0;
+      background-color: $primary;
     }
 
     &__change-btn {
@@ -464,7 +477,6 @@ onMounted(async () => {
       font-weight: 400;
       line-height: 28px;
       color: $primary;
-      word-break: break-all;
     }
 
     &__btns {

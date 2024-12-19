@@ -17,8 +17,8 @@
             class="auth-input"
             type="email"
             name="email"
-            required=""
-            placeholder=""
+            required
+            placeholder="Ваш email"
           /><label
             class="auth-label filled"
             for="email"
@@ -43,8 +43,8 @@
             class="auth-input"
             type="password"
             name="password"
-            required=""
-            placeholder=""
+            required
+            placeholder="Ваш пароль"
           /><label
             class="auth-label filled"
             for="password"
@@ -62,17 +62,41 @@
             </div>
           </ErrorMessage>
         </div>
-        <div v-if="route.path.startsWith('/register')" class="gals">
-          <div v-for="gal of authStore.gals" :key="gal.id" class="checkbox-wrapper">
-            <input
-              :is-required="1"
+        <div
+          v-if="route.path.startsWith('/register') && authStore.gals.length"
+          class="gals"
+        >
+          <div
+            v-for="gal of authStore.gals"
+            :key="gal.id"
+            class="checkbox-wrapper"
+          >
+            <Field
               ref="gals"
               :id="'checkbox-' + gal.id"
+              :rules="validateCheckbox"
               class="substituted"
               type="checkbox"
+              :name="'checkbox-' + gal.id"
+              :value="gal.id"
               aria-hidden="true"
+              required
             />
-            <label :for="'checkbox-' + gal.id" v-html="authStore.formattedTitle(gal.title, gal.keyword, gal.url_addr)"></label>
+            <label
+              :for="'checkbox-' + gal.id"
+              v-html="authStore.formattedTitle(gal.title, gal.keyword, gal.url_addr)"
+            ></label>
+            <ErrorMessage
+              :name="`checkbox-${gal.id}`"
+              v-slot="{ message }"
+            >
+              <div class="invalid-email-error-message">
+                <img
+                  class="error-icon"
+                  src="https://auth.openai.com/assets/error-icon-BaFi8GTB.svg"
+                />{{ message }}
+              </div>
+            </ErrorMessage>
           </div>
         </div>
         <button class="continue-btn">Продолжить</button>
@@ -95,7 +119,10 @@
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { Form, Field, ErrorMessage } from 'vee-validate'
 import { useAuthStore } from '@/stores/auth'
-import { onMounted, useTemplateRef } from 'vue';
+import { onMounted, useTemplateRef } from 'vue'
+
+import type { GenericObject } from 'vee-validate'
+import type { RegisterUser } from '@/interfaces/services/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -104,10 +131,10 @@ const authStore = useAuthStore()
 
 const emailModel = defineModel('emailModel')
 const passwordModel = defineModel('passwordModel')
-const gals = useTemplateRef('gals')
+const gals = useTemplateRef<HTMLInputElement>('gals')
 
-function validateEmail(value: string) {
-  if (!value) {
+function validateEmail(value: unknown) {
+  if (typeof value !== 'string') {
     return 'Это поле обязательно'
   }
 
@@ -119,8 +146,8 @@ function validateEmail(value: string) {
   return true
 }
 
-function validatePassword(value: string) {
-  if (!value) {
+function validatePassword(value: unknown) {
+  if (typeof value !== 'string') {
     return 'Это поле обязательно'
   }
 
@@ -131,16 +158,31 @@ function validatePassword(value: string) {
   return true
 }
 
-async function submit(user) {
+function validateCheckbox(value: unknown) {
+  if (typeof value !== 'number') {
+    return 'Этот чекбокс обязательный'
+  }
 
-  
+  return true
+}
+
+async function submit(user: GenericObject) {
   if (route.path.startsWith('/register')) {
-    for (const gal of gals.value) {
-      console.log('gal', gal.getAttribute('is-required'), gal.checked);
+    const regex = /checkbox-\d+/
+    const registerUser: RegisterUser = {}
+
+    registerUser.email = user.email
+    registerUser.password = user.password
+    registerUser.gals = []
+
+    const filteredGalsKeys: Array<number> = Object.keys(user).filter((key) => regex.test(key))
+
+    for (const key of filteredGalsKeys) {
+      registerUser.gals.push(user[key])
     }
 
     await authStore
-      .register(user)
+      .register(registerUser)
       .then(() => {
         router.push('/login')
       })
@@ -156,10 +198,7 @@ async function submit(user) {
 }
 
 onMounted(async () => {
-  console.log();
-  if (route.path.startsWith('/register')) {
-    await authStore.getGals()
-  }
+  await authStore.getGals()
 })
 </script>
 
